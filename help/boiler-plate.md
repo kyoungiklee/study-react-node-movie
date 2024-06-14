@@ -384,3 +384,77 @@ userSchema.comparePassword = function (plainPassword, callback) {
 }
 ....
  ```
+
+ # 12. 로그인 기능 만들기 - token 생성하기
+ - token을 생성하기위해 jsonwebtoken library를 인스톨한다. [Json web token Site](https://www.npmjs.com/package/jsonwebtoken)
+ ```sh
+$ npm install jsonwebtoken --save
+
+added 13 packages, and audited 181 packages in 2s
+
+20 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+ ```
+ - token을 cookie에 저장하기위해 cookie-parser library를 인스톨한다. 
+ ```sh
+$ npm install cookie-parser --save
+
+added 2 packages, and audited 183 packages in 1s
+
+20 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+ ```
+
+  - 토큰 생성한다. 
+```javascript
+//User.js
+// 결과값을 리턴하기위해 인수로 콜백함수를 받는다. 
+userSchema.methods.generateToken = function (callback) {
+    let user = this;
+    //jsonwebtoken library를 이용하여 토큰을 만든다.
+    let token = jwt.sign(user._id.toString(), 'secretToken');
+    //생성된 토큰을 User 모델에 저장한다. 
+    user.token = token;
+
+    //User 모델의 변경사항을 MongoDB에 저장한다. 
+    user.save().then(() => {
+        callback(null, user);
+    }).catch(err => {
+        callback(err, );
+    })
+}
+```
+  - 생성된 토큰을 쿠키에 저장한다. 
+```javascript
+//index.js
+//로그인 기능을 만들다.
+app.post('/login', async (req, res) => {
+    //db에서 이메일을 찾는다. 
+    await User.findOne({email: req.body.email}).then(
+        user => {
+            if(!user) {
+                return res.json({
+                    success: false,
+                    message: "제공된 이메일에 해당하는 유저가 없습니다."
+                })
+            }
+            //비밀번호가 같은지를 확인한다. userSchema에서 메소드를 구현한다.
+            user.comparePassword(req.body.password, (err, isMatch) => {
+                if(!isMatch) 
+                    return res.json({loginSuccess: false, message: "비밀번호가 틀렸습니다."});
+                //비밀번호가 같다면 token을 생성한다. userSchema에 메소드를 구현한다. 
+                user.generateToken((err, user) => {
+                    if(err) return res.status(400).send(err);
+                    // 토큰을 쿠키에 저장한다. 
+                    res.cookie("x_auth", user.token)
+                    .status(200).json({success: true, userId: user._id})
+                })
+            })
+        }
+    )
+})
+```

@@ -21,6 +21,10 @@ app.use(bodyParser.urlencoded({ extended: true }))
 //application/json 로 전달되는 데이터를 분석할 수 있게 해준다. 
 app.use(bodyParser.json())
 
+const cookeParser = require("cookie-parser")
+app.use(cookeParser())
+
+//User model 가져오기
 const { User } = require("./models/User")
 
 //요청 router
@@ -42,10 +46,10 @@ app.post('/register', async (req, res) => {
 })
 
 //로그인 기능을 만들다.
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     //db에서 이메일을 찾는다. 
-    User.findOne({email: req.body.email}).then(
-        (err, user) => {
+    await User.findOne({email: req.body.email}).then(
+        user => {
             if(!user) {
                 return res.json({
                     success: false,
@@ -54,20 +58,19 @@ app.post('/login', (req, res) => {
             }
             //비밀번호가 같은지를 확인한다. userSchema에서 메소드를 구현한다.
             user.comparePassword(req.body.password, (err, isMatch) => {
-                if(!isMatch)
-                    return res.json({
-                        loginSuccess: false
-                        , message: "비밀번호가 틀렸습니다."
+                if(!isMatch) 
+                    return res.json({loginSuccess: false, message: "비밀번호가 틀렸습니다."});
+                //비밀번호가 같다면 token을 생성한다. 
+                user.generateToken((err, user) => {
+                    if(err) return res.status(400).send(err);
+                    // 토큰을 쿠키에 저장한다. 
+                    res.cookie("x_auth", user.token)
+                    .status(200).json({success: true, userId: user._id})
                 })
 
             })
         }
     )
-
-    
-
-    
-
 })
 
 //port 오픈
