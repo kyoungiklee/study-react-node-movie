@@ -41,5 +41,34 @@ app.post('/register', async (req, res) => {
     })
 })
 
+//로그인 기능을 만들다.
+app.post('/login', (req, res) => {
+    //db에서 이메일을 찾는다. 
+    User.findOne({email: req.body.email}).then(
+        (err, user) => {
+            if(!user) {
+                return res.json({
+                    success: false,
+                    message: "제공된 이메일에 해당하는 유저가 없습니다."
+                })
+            }
+            //비밀번호가 같은지를 확인한다. userSchema에서 메소드를 구현한다.
+            user.comparePassword(req.body.password, (err, isMatch) => {
+                if(!isMatch)
+                    return res.json({
+                        loginSuccess: false
+                        , message: "비밀번호가 틀렸습니다."
+                })
+
+            })
+        }
+    )
+
+    
+
+    
+
+})
+
 //port 오픈
 app.listen(port, () => console.log(`Example app listening on port ${port}`))

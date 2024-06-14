@@ -228,7 +228,7 @@ found 0 vulnerabilities
   }
 ```
 
-# 09. 비밀정보 보호하기
+# 09. dev, prd 환경 설정하기
  - 설정정보를 dev환경과 운영환경으로 나누기
  - dev.js / prd.js로 환경설정 분기
  ```javascript
@@ -253,3 +253,93 @@ if(process.env.NODE_ENV === "production") {
     module.exports = require("./dev");
 }
 ```
+ - .gitignore 파일에 dev.js 설정파일이 업로드 되지 않도록 처리
+```text
+### Dev environment ###
+config/dev.js
+```
+
+# 10. Bcrypt로 비밀번호 암호화하기
+- 사용자 비밀번호가 DB에 평문으로 저장되지 않도록 bcrypt로 암호화하여 저장
+- Bycript library 설치하기 [bcrypt site](https://www.npmjs.com/package/bcrypt)
+```sh
+$ npm install bcrypt --save
+npm WARN deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm WARN deprecated npmlog@5.0.1: This package is no longer supported.
+npm WARN deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm WARN deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm WARN deprecated are-we-there-yet@2.0.0: This package is no longer supported.
+npm WARN deprecated gauge@3.0.2: This package is no longer supported.
+
+added 54 packages, and audited 168 packages in 5s
+
+20 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+```
+- bcrypt 적용하기
+```javascript
+const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
+
+const userSchema = mongoose.Schema({
+    name: {
+        type: String,
+        maxLength: 50
+    },
+    email: {
+        type: String,
+        trim: true,
+        unique: 1
+    },
+    password: {
+        type: String,
+        maxLength: 50
+    },
+    role: {
+        type: Number,
+        default: 0
+    },
+    image: String,
+    token: {
+        type: String,
+    },
+    tokenExp: {
+        type: Number,
+    }
+})
+
+// save 전에 해당 기능을 우선 적용한다. 
+userSchema.pre('save', function (next) {
+    //비밀번호를 암호화 시킨다. 
+    let user = this;
+    //password가 변경될 경우에만 암호화 과정을 적용한다. 
+    if(user.isModified('password')){
+        //salt를 생성한다. 
+        bcrypt.genSalt(saltRounds, function (err, salt) {
+            if (err) return next(err);
+            // 생성된 salt를 이용하여 평문으로 전달된 사용자 패스워드를 암호화 한다.  
+            bcrypt.hash(user.password, salt, function (err, hash) {
+                if (err) return next();
+                user.password = hash;
+                next();
+            })
+        })
+    } else {
+      //패스워드 변경된 경우가 아니라면 다음 프로세스를 처리한다. 
+      next();
+    }
+
+})
+
+const User = mongoose.model('User', userSchema)
+module.exports = { User };
+
+```
+# 11. 로그인 기능 만들기
+ - router 만들기
+ ```javascript
+
+ ```
