@@ -338,8 +338,49 @@ const User = mongoose.model('User', userSchema)
 module.exports = { User };
 
 ```
-# 11. 로그인 기능 만들기
+# 11. 로그인 기능 만들기 - 패스워드 비교
  - router 만들기
  ```javascript
 
+ //로그인 기능을 만들다.
+app.post('/login', (req, res) => {
+    //db에서 이메일을 찾는다. 
+    User.findOne({email: req.body.email}).then(
+        (err, user) => {
+            if(!user) {
+                return res.json({
+                    success: false,
+                    message: "제공된 이메일에 해당하는 유저가 없습니다."
+                })
+            }
+            //비밀번호가 같은지를 확인한다. userSchema에서 메소드를 구현한다.
+            user.comparePassword(req.body.password, (err, isMatch) => {
+                if(!isMatch)
+                    return res.json({
+                        loginSuccess: false
+                        , message: "비밀번호가 틀렸습니다."
+                })
+            })
+        }
+    )
+})
+
+ ```
+ - User 모델에 패스워드를 비교하는 함수를 만든다. 
+ ```javascript
+//User.js
+....
+//인수로 client에서 전돨된 평문의 패스워드를 받아 암호화된 패스워드를 비교후 
+//결과를 callback 함수로 전달한다. 
+userSchema.comparePassword = function (plainPassword, callback) {
+    //평문 패스워드와 암호화된 패스워드를 비교한다. 
+
+    let user = this;
+    //bcript.compare() 함수 사용
+    bcrypt.compare(plainPassword, user.password, function(err, isMatch){
+        if (err) return callback(err,); //함수 수행에 오류가 있으면 error 전달한다.
+        callback(null, isMatch); //비교결과를 전달한다. 
+    })
+}
+....
  ```
