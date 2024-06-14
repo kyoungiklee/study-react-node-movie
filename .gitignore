@@ -1,6 +1,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,node,react
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,node,react
 
+### Dev environment ###
+config/dev.js
 ### Node ###
 # Logs
 logs
