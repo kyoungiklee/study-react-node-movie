@@ -34,6 +34,10 @@ app.get('/', function (req, res) {
     res.send('Hello World')
 })
 
+app.get('/api/hello', (req, res) => {
+    return res.send("안녕하세요~~~");
+})
+
 
 //회원가입을 위한 Register router 만들기
 app.post('/api/users/register', async (req, res) => {

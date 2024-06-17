@@ -642,3 +642,147 @@ Happy hacking!
 - index.js 는 App.js 컴포넌트를 호출한다 
 - App.js 컴폰너트가 들어가는 위치는 index.html의 root id이다. 
 
+
+# 19. 프로젝트에 특성화된 구조 설명
+- _actions, _reducers Redux를 위한 폴더들
+- components/views -> 페이지를 넣는다.
+- components/views/Sections -> 페이지와 관련된 컴포넌트 또는 css 파일들을 넣는다.
+- App.js  -> routing 관련 일을 처리한다.
+- Config.js -> 환경변수를 관리한다.
+- hoc -> Higher Order Component가 위치한다. 
+- utils -> 여러곳에 쓰이는 것들이 위치한다. 
+
+# 20. App.js React Router Dom
+- 페이지를 이동할때 React Router Dom이라는 것을 사용한다.
+- React router dom 인스톨하기
+```sh
+$ npm install react-router-dom --save
+
+added 3 packages, and audited 1546 packages in 5s
+
+262 packages are looking for funding
+  run `npm fund` for details
+
+8 vulnerabilities (2 moderate, 6 high)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+```
+- react-router-dom 구성하기
+```javascript
+//App.js
+import React from 'react';
+import { BrowserRouter as Router,
+  Routes,
+  Route,
+} from "react-router-dom";
+import LandingPage from './components/views/LandingPage/LangingPage';
+import LoginPage from './components/views/LoginPage/LoginPage';
+import RegisterPage from './components/views/RegisterPage/RegisterPage';
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage/>} />
+        <Route path="/register" element={<RegisterPage />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
+```
+
+# 21. Data request, response Flow and Axios
+- Axios는 클라이언트에서 서버로 api요청을 위하 사용하는 library
+- Axios 인스톨하기
+```sh
+$ npm install axios --save
+
+added 3 packages, and audited 1549 packages in 5s
+
+262 packages are looking for funding
+  run `npm fund` for details
+
+8 vulnerabilities (2 moderate, 6 high)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+```
+- axios로 요청 보내기
+```javascript
+//LandingPage.js
+import React, { useEffect } from 'react'
+import axios from "axios";
+
+function LangingPage() {
+  useEffect(() => {
+    //axios를 이용하여 서버로 요청을 보낸다. 
+      axios.get('http://localhost:5000/api/hello').then((response) => {
+        console.log(response.data);
+    })
+  }) 
+
+  return (
+    <div>LangingPage</div>
+  )
+}
+
+export default LangingPage
+```
+- 요청에 대한 서버 기능 구현
+```javascript
+app.get('/api/hello', (req, res) => {
+    return res.send("안녕하세요~~~");
+})
+
+```
+- 첫 요청을 보낸서버와 다른 서버로 요청을 보낼시 CORS(Cross-Origin Resource Sharing) 오류 발생
+```log
+Access to XMLHttpRequest at 'http://localhost:5000/api/hello' from origin 'http://localhost:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+```
+
+# 22. CORS 이슈, Proxy 설정
+- proxy 인스톨하기
+```sh
+# client 서버에 인스톨한다. 
+$ npm install http-proxy-middleware --save
+
+added 1 package, changed 1 package, and audited 1550 packages in 5s
+
+262 packages are looking for funding
+  run `npm fund` for details
+
+8 vulnerabilities (2 moderate, 6 high)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details
+```
+- [proxy 설정 방법](https://create-react-app.dev/docs/proxying-api-requests-in-development)
+
+```javascript
+//setupProxy.js
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
+module.exports = function (app) {
+    app.use(
+        '/api',
+        createProxyMiddleware({
+            target: 'http://localhost:5000/api',
+            changeOrigin: true,
+        })
+    );
+};
+```
+# 23. What is Proxy Server
+- 방화벽 기능
+- 웹필터 기능
+- 캐쉬데이터 공유 데이터 제공 기능
