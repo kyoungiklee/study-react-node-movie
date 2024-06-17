@@ -458,3 +458,187 @@ app.post('/login', async (req, res) => {
     )
 })
 ```
+
+ - login test 요청/응답 
+ ```json
+{
+  "email": "kyoungik.lee+7@gmail.com",
+  "password": "123456"
+}
+
+
+{
+    "loginSuccess": true,
+    "userId": "666bf4a8aa6e0657bf9ef045"
+}
+
+ ```
+
+ # 13. Auth 기능 만들기
+  - auth router 만들기
+```javascript
+//index.js
+  //미들웨어
+  const {auth} = require("../middleware/auth");
+
+  // auth는 요청은 받으면 미들웨어를 호출하고 미들웨어의 결과에 따라 응답을 처리한다. 
+  app.get('/api/users/auth', auth,  (req, res) => {
+
+    //auth 미들웨어를 통과했으므로
+    res.status(200).json({
+        _id: req.user._id,
+        isAdmin: req.user.role === 0 ? false : true,
+        isAuth: true,
+        email : req.user.email,
+        name: req.user.name,
+        lastname: req.user.lastname,
+        role: req.user.role,
+        image: req.user.image,
+    })
+})
+```
+ - 복호화된 User ID를 이용해서 데이터베이스에서 User ID에 해당하는 사용자를 찾아 쿠키에서 받아온 token을 가지고 있는지 확인한다.
+ 
+  
+```javascript
+const {User} = require("../models/User");
+
+let auth = (req, res, next) => {
+    //인증처리를 하는 곳
+
+    //클라이언트 쿠키에서 토큰을 가져온다.
+    let token = req.cookie.x_auth;
+
+    //토큰을 복호하한 후 user를 찾는다. 
+
+    User.findByToken(token, (err, user) => {
+        if(err) return res.status(400).send(err);
+        //user가 없다면
+        if(!user) return res.status(200).json({isAuth: false, error: true});
+        //user가 있다면
+        req.token = token; //req에 토큰을 저장
+        req.user = user; //req에 user info 저장 
+        next(); //미들웨어에서 빠져나간다. 
+    })
+
+    
+}
+
+module.exports = {auth};
+```
+
+ - Cookie에서 저장된 Token을 서버에서 받아 복호화한다. 복호화한 user id를 이용하여 사용자를 찾는다.
+
+```javascript
+userSchema.statics.findByToken = function (token, callback) {
+    let user = this;
+    jwt.verify(token, 'secretToken', function(err, decoded) {
+        
+        //유저아이디를 이용하여 유저를 찾는다. 
+        user.findOne({"_id": decoded, "token":token}).then((user) => {
+            callback(null, user);
+        }).catch(err => {
+            return callback(err,);
+        })
+    })
+}
+```
+# 14. 로그아웃기능 만들기
+- 로그아웃 router 만들기
+- 로그아웃 하려는 user를 DB에서 찾는다. 
+- user정보에서 token 정보를 지워준다.
+```javascript
+....
+app.get('/api/users/logout',auth, (req, res) => {
+    User.findOneAndUpdate({"_id": req.user._id}, {"token": ""})
+        .then(user => {
+            return res.status(200).json({success: true})
+        }).catch(err => {
+            return res.status(400).json({success: false, error: err})
+        })
+})  
+....
+```
+
+# 15. What is React JS
+- library이다. 페이스북에서 만들었다.
+- component로 만들어 사용한다. 
+- Virtual DOM을 사용한다. 
+- snapshot과 변경된 부분을 확인하여 Real DOM에 반영
+
+# 16. Create React App으로 리액트 시작하기
+- Babel Webpack 설정에 많은 시간이 소모됨
+- Babel은 구형브라우저에서 동작할 수 있도록 ES6문법으로 동작할 수 있도록 해준다. 
+- Webpack 많은 모듈들을 합하여 하나로 모아줌
+- npx를 이용하여 react 개발환경을 구성함
+
+```sh
+$ cd client
+$ npx create-react-app .
+
+Creating a new React app in C:\study\study-react-movie-site\client.
+
+Installing packages. This might take a couple of minutes.
+Installing react, react-dom, and react-scripts with cra-template...
+
+
+added 1476 packages in 1m
+
+258 packages are looking for funding
+  run `npm fund` for details
+
+Installing template dependencies using npm...
+
+added 67 packages, and changed 1 package in 8s
+
+262 packages are looking for funding
+  run `npm fund` for details
+Removing template package using npm...
+
+
+removed 1 package, and audited 1543 packages in 6s
+
+262 packages are looking for funding
+  run `npm fund` for details
+
+8 vulnerabilities (2 moderate, 6 high)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+Success! Created client at C:\study\study-react-movie-site\client
+Inside that directory, you can run several commands:
+
+  npm start
+    Starts the development server.
+
+  npm run build
+    Bundles the app into static files for production.
+
+  npm test
+    Starts the test runner.
+
+  npm run eject
+    Removes this tool and copies build dependencies, configuration files    
+    and scripts into the app directory. If you do this, you can’t go back!  
+
+We suggest that you begin by typing:
+
+  cd C:\study\study-react-movie-site\client
+  npm start
+
+Happy hacking!
+```
+# 17. npm, npx란
+- npm은 저장소 역활을 한다.
+- npm은 command line utility 역할을 한다.
+- npx는 create-react-app을 다운로드 없이 이용할 수 있게 한다. 
+
+# 18. Create React App의 구조
+- node_modules, public, src 폴더와 package.json, .gitignore,README.md 가 생성된다. 
+- 시작점은 index.js이다. 
+- index.js 는 App.js 컴포넌트를 호출한다 
+- App.js 컴폰너트가 들어가는 위치는 index.html의 root id이다. 
+

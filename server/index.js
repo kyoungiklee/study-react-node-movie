@@ -27,6 +27,8 @@ app.use(cookeParser())
 //User model 가져오기
 const { User } = require("./models/User")
 
+const { auth } = require("./middleware/auth")
+
 //요청 router
 app.get('/', function (req, res) {
     res.send('Hello World')
@@ -34,7 +36,7 @@ app.get('/', function (req, res) {
 
 
 //회원가입을 위한 Register router 만들기
-app.post('/register', async (req, res) => {
+app.post('/api/users/register', async (req, res) => {
     // 회원가입시 필요한 정보를 request로부터 찾아 MongoDB에 저장한다. 
     const user = new User(req.body)
 
@@ -46,7 +48,7 @@ app.post('/register', async (req, res) => {
 })
 
 //로그인 기능을 만들다.
-app.post('/login', async (req, res) => {
+app.post('/api/users/login', async (req, res) => {
     //db에서 이메일을 찾는다. 
     await User.findOne({email: req.body.email}).then(
         user => {
@@ -65,13 +67,37 @@ app.post('/login', async (req, res) => {
                     if(err) return res.status(400).send(err);
                     // 토큰을 쿠키에 저장한다. 
                     res.cookie("x_auth", user.token)
-                    .status(200).json({success: true, userId: user._id})
+                    .status(200).json({loginSuccess: true, userId: user._id})
                 })
 
             })
         }
     )
 })
+
+app.get('/api/users/auth', auth,  (req, res) => {
+
+    //auth 미들웨어를 통과했으므로
+    res.status(200).json({
+        _id: req.user._id,
+        isAdmin: req.user.role === 0 ? false : true,
+        isAuth: true,
+        email : req.user.email,
+        name: req.user.name,
+        lastname: req.user.lastname,
+        role: req.user.role,
+        image: req.user.image,
+    })
+})
+
+app.get('/api/users/logout',auth, (req, res) => {
+    User.findOneAndUpdate({"_id": req.user._id}, {"token": ""})
+        .then(user => {
+            return res.status(200).json({success: true})
+        }).catch(err => {
+            return res.status(400).json({success: false, error: err})
+        })
+})  
 
 //port 오픈
 app.listen(port, () => console.log(`Example app listening on port ${port}`))

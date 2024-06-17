@@ -17,6 +17,10 @@ const userSchema = mongoose.Schema({
         type: String,
         maxLength: 100
     },
+    lastname: {
+        type: String,
+        maxlength: 50
+    },
     role: {
         type: Number,
         default: 0
@@ -71,6 +75,20 @@ userSchema.methods.generateToken = function (callback) {
         callback(err, );
     })
 }
+
+userSchema.statics.findByToken = function (token, callback) {
+    let user = this;
+    jwt.verify(token, 'secretToken', function(err, decoded) {
+        
+        //유저아이디를 이용하여 유저를 찾는다. 
+        user.findOne({"_id": decoded, "token":token}).then((user) => {
+            callback(null, user);
+        }).catch(err => {
+            return callback(err,);
+        })
+    })
+}
+
 
 const User = mongoose.model('User', userSchema)
 module.exports = { User };
